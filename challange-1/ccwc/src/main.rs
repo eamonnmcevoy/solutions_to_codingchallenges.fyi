@@ -30,11 +30,6 @@ fn main() {
 
     let result: Result<wc::Counts, Box<dyn std::error::Error>>;
     if args.filepath.is_none() {
-        // let mut buffer = String::new();
-        // let lines = io::stdin().lines();
-        // let b = io::stdin()
-        // let buff: String = lines.collect();
-	    // io::stdin(). (&mut buffer).unwrap();
         result = wc::process_reader(io::stdin());
     }
     else {

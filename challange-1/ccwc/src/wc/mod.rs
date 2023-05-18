@@ -24,7 +24,6 @@ pub fn process_reader<R: Read>(mut reader: R) -> Result<Counts, Box<dyn Error>> 
     let mut char_count: u64 = 0;
     let mut byte_count: u64 = 0;
 
-    // let mut is_previous_byte_whitespace: bool = true;
     let mut previous_byte: u8 = b' ';
     loop {
         let file_read_result = reader.read(&mut buffer);
@@ -75,7 +74,7 @@ fn process_buffer(buffer: &[u8], previous_buffer_end_byte: u8) -> (u64, u64, u64
         previous_byte = buffer[i];
     }
 
-    (line_count, word_count, char_count, buffer[buffer.len() - 1]) // is_previous_byte_whitespace)
+    (line_count, word_count, char_count, buffer[buffer.len() - 1])
 }
 
 fn is_new_word(previous_byte: u8, current_byte: u8) -> bool {
