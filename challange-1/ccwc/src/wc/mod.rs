@@ -18,7 +18,7 @@ pub fn process_file(filepath: String) -> Result<Counts, Box<dyn Error>> {
 
 pub fn process_reader<R: Read>(mut reader: R) -> Result<Counts, Box<dyn Error>> {
     const BUFFER_SIZE: usize = 1024;
-    let mut buffer: [u8; 1024] = [0; BUFFER_SIZE];
+    let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
     let mut line_count: u64 = 0;
     let mut word_count: u64 = 0;
     let mut char_count: u64 = 0;
