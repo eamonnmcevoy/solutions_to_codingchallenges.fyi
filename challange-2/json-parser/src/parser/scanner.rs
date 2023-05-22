@@ -43,6 +43,7 @@ impl<'a> Scanner<'a> {
             self.line += 1;
             self.line_start = self.cursor;
         }
+        // dbg!(char);
         return char;
     }
     pub fn skip_whitespace(&mut self) {

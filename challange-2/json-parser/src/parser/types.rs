@@ -48,7 +48,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ScanError {
     pub line: usize,
     pub line_start: usize,
