@@ -1,4 +1,4 @@
-use super::scanner::Scanner;
+use super::source_scanner::SourceScanner;
 use super::types::{ScanError, Token, TokenType};
 
 pub struct Lexer {}
@@ -7,8 +7,10 @@ impl Lexer {
         Lexer {}
     }
 
-    pub fn get_tokens(&self, source: &str) -> Result<Vec<Token>, Vec<ScanError>> {
-        let mut scanner = Scanner::new(source);
+    pub fn get_tokens(&self, source: &str) -> Result<Vec<Token>, ScanError> {
+        let mut scanner = SourceScanner::new(source);
+        scanner.skip_whitespace();
+
         while !scanner.is_at_end() {
             let result = self.get_next_token(&mut scanner);
             match result {
@@ -16,21 +18,17 @@ impl Lexer {
                     scanner.add_token(token_type);
                 }
                 Err(error) => {
-                    scanner.report_error(error);
+                    let scan_error = scanner.report_error(error);
+                    return Err(scan_error);
                 }
             }
+            scanner.skip_whitespace();
         }
 
-        if scanner.had_error() {
-            Err(scanner.errors)
-        } else {
-            Ok(scanner.tokens)
-        }
+        Ok(scanner.tokens)
     }
 
-    fn get_next_token(&self, scanner: &mut Scanner) -> Result<TokenType, String> {
-        scanner.skip_whitespace();
-
+    fn get_next_token(&self, scanner: &mut SourceScanner) -> Result<TokenType, String> {
         match scanner.peek() {
             '{' => self.match_symbol(scanner, '{', TokenType::LeftBrace),
             '}' => self.match_symbol(scanner, '}', TokenType::RightBrace),
@@ -43,13 +41,16 @@ impl Lexer {
             'n' => self.match_keyword(scanner, "null", TokenType::Null),
             '"' => self.match_string(scanner),
             '0'..='9' | '-' => self.match_number(scanner),
-            _ => Err("Unexpected character".to_string()),
+            _ => {
+                scanner.advance();
+                Err("Unexpected character".to_string())
+            }
         }
     }
 
     fn match_symbol(
         &self,
-        scanner: &mut Scanner,
+        scanner: &mut SourceScanner,
         symbol: char,
         token_type: TokenType,
     ) -> Result<TokenType, String> {
@@ -62,7 +63,7 @@ impl Lexer {
 
     fn match_keyword(
         &self,
-        scanner: &mut Scanner,
+        scanner: &mut SourceScanner,
         keyword: &str,
         token_type: TokenType,
     ) -> Result<TokenType, String> {
@@ -74,7 +75,7 @@ impl Lexer {
         Ok(token_type)
     }
 
-    fn match_string(&self, scanner: &mut Scanner) -> Result<TokenType, String> {
+    fn match_string(&self, scanner: &mut SourceScanner) -> Result<TokenType, String> {
         if scanner.advance() != '"' {
             return Err("Expected '\"' at start of string".to_string());
         }
@@ -87,6 +88,10 @@ impl Lexer {
 
             if scanner.peek() == '\n' {
                 return Err("Unescaped newline in string".to_string());
+            }
+
+            if scanner.peek() == '\t' {
+                return Err("Unescaped tab in string".to_string());
             }
 
             if scanner.peek() == '"' {
@@ -124,14 +129,24 @@ impl Lexer {
         return Ok(TokenType::String);
     }
 
-    fn match_number(&self, scanner: &mut Scanner) -> Result<TokenType, String> {
+    fn match_number(&self, scanner: &mut SourceScanner) -> Result<TokenType, String> {
         if scanner.peek() == '-' {
             scanner.advance();
         }
-
-        while self.is_digit(scanner.peek()) {
+        
+        if scanner.peek() == '0' {
             scanner.advance();
+            if self.is_digit(scanner.peek()) {
+                return Err("Invalid number - no leading zeros".to_string());
+            }
         }
+        else {
+            while self.is_digit(scanner.peek()) {
+                scanner.advance();
+            }
+        }
+
+        
 
         if scanner.peek() == '.' {
             scanner.advance();
@@ -146,6 +161,11 @@ impl Lexer {
             if scanner.peek() == '+' || scanner.peek() == '-' {
                 scanner.advance();
             }
+            let next = scanner.peek();
+            if !self.is_digit(next) {
+                return Err("Expected digit after exponent".to_string());
+            }
+
             while self.is_digit(scanner.peek()) {
                 scanner.advance();
             }
@@ -188,7 +208,7 @@ mod tests {
     #[test]
     fn test_get_next_token_brace() {
         // Arrange
-        let mut scanner = Scanner::new("{");
+        let mut scanner = SourceScanner::new("{");
         let lexer = Lexer::new();
 
         // Act
@@ -201,7 +221,7 @@ mod tests {
     #[test]
     fn test_get_next_token_boolean() {
         // Arrange
-        let mut scanner = Scanner::new("true");
+        let mut scanner = SourceScanner::new("true");
         let lexer = Lexer::new();
 
         // Act
@@ -214,7 +234,7 @@ mod tests {
     #[test]
     fn test_get_next_token_null() {
         // Arrange
-        let mut scanner = Scanner::new("null");
+        let mut scanner = SourceScanner::new("null");
         let lexer = Lexer::new();
 
         // Act
@@ -227,7 +247,7 @@ mod tests {
     #[test]
     fn test_match_keyword() {
         // Arrange
-        let mut scanner = Scanner::new("true");
+        let mut scanner = SourceScanner::new("true");
         let lexer = Lexer::new();
 
         // Act
@@ -240,7 +260,7 @@ mod tests {
     #[test]
     fn test_match_string() {
         // Arrange
-        let mut scanner = Scanner::new("\"test string\"");
+        let mut scanner = SourceScanner::new("\"test string\"");
         let lexer = Lexer::new();
 
         // Act
@@ -253,7 +273,7 @@ mod tests {
     #[test]
     fn test_match_string_with_quote() {
         // Arrange
-        let mut scanner = Scanner::new("\"\\\"\"");
+        let mut scanner = SourceScanner::new("\"\\\"\"");
         let lexer = Lexer::new();
 
         // Act
@@ -266,7 +286,7 @@ mod tests {
     #[test]
     fn test_match_string_fail() {
         // Arrange
-        let mut scanner = Scanner::new("\"test string");
+        let mut scanner = SourceScanner::new("\"test string");
         let lexer = Lexer::new();
 
         // Act
@@ -279,7 +299,7 @@ mod tests {
     #[test]
     fn test_match_number() {
         // Arrange
-        let mut scanner = Scanner::new("123");
+        let mut scanner = SourceScanner::new("123");
         let lexer = Lexer::new();
 
         // Act
@@ -287,5 +307,44 @@ mod tests {
 
         // Assert
         assert!(result == Ok(TokenType::Number));
+    }
+
+    #[test]
+    fn test_err_unquoted_str() {
+        // Arrange
+        let mut scanner = SourceScanner::new("unquoted string");
+        let lexer = Lexer::new();
+
+        // Act
+        let result = lexer.get_next_token(&mut scanner);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_err_number_no_digit_after_exponent() {
+        // Arrange
+        let mut scanner = SourceScanner::new("0e");
+        let lexer = Lexer::new();
+
+        // Act
+        let result = lexer.get_next_token(&mut scanner);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_err_number_no_leading_zeros() {
+        // Arrange
+        let mut scanner = SourceScanner::new("0123");
+        let lexer = Lexer::new();
+
+        // Act
+        let result = lexer.get_next_token(&mut scanner);
+
+        // Assert
+        assert!(result.is_err());
     }
 }

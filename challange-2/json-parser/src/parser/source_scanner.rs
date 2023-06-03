@@ -2,7 +2,7 @@ use std::str::Chars;
 
 use super::types::{ScanError, Token, TokenType};
 
-pub struct Scanner<'a> {
+pub struct SourceScanner<'a> {
     pub token_start: usize,
     pub cursor: usize,
     line: usize,
@@ -13,9 +13,9 @@ pub struct Scanner<'a> {
     pub tokens: Vec<Token>,
     pub errors: Vec<ScanError>,
 }
-impl<'a> Scanner<'a> {
-    pub fn new(source: &'a str) -> Scanner<'a> {
-        Scanner {
+impl<'a> SourceScanner<'a> {
+    pub fn new(source: &'a str) -> SourceScanner<'a> {
+        SourceScanner {
             token_start: 0,
             cursor: 0,
             line: 1,
@@ -66,19 +66,18 @@ impl<'a> Scanner<'a> {
             position_end: self.cursor,
         });
     }
-    pub fn report_error(&mut self, message: String) {
+    pub fn report_error(&mut self, message: String) -> ScanError {
         let lexeme = self.source[self.token_start..self.cursor].to_string();
-        self.errors.push(ScanError {
+        let scan_error = ScanError {
             line: self.line,
             line_start: self.line_start,
             lexeme: lexeme,
             position_start: self.token_start,
             position_end: self.cursor,
             message: message,
-        });
-    }
-    pub fn had_error(&self) -> bool {
-        return self.errors.len() > 0;
+        };
+        self.errors.push(scan_error.clone());
+        return scan_error;
     }
 }
 
@@ -89,7 +88,7 @@ mod tests {
     #[test]
     fn test_is_at_end() {
         // Arrange
-        let mut scanner = Scanner::new("abc");
+        let mut scanner = SourceScanner::new("abc");
 
         // Act
         scanner.advance();
@@ -103,7 +102,7 @@ mod tests {
     #[test]
     fn test_is_at_end2() {
         // Arrange
-        let mut scanner = Scanner::new("abc");
+        let mut scanner = SourceScanner::new("abc");
 
         // Act
         scanner.advance();
@@ -118,7 +117,7 @@ mod tests {
     #[test]
     fn test_add_token() {
         // Arrange
-        let mut scanner = Scanner::new("abc");
+        let mut scanner = SourceScanner::new("abc");
 
         // Act
         scanner.advance();
@@ -134,7 +133,7 @@ mod tests {
     #[test]
     fn test_report_error() {
         // Arrange
-        let mut scanner = Scanner::new("abc");
+        let mut scanner = SourceScanner::new("abc");
 
         // Act
         scanner.advance();
@@ -145,13 +144,12 @@ mod tests {
         // Assert
         assert!(error.message == "test");
         assert!(error.lexeme == "ab");
-        assert!(scanner.had_error());
     }
 
     #[test]
     fn test_peek() {
         // Arrange
-        let scanner = Scanner::new("abc");
+        let scanner = SourceScanner::new("abc");
 
         // Act
         let peek = scanner.peek();
@@ -163,7 +161,7 @@ mod tests {
     #[test]
     fn test_advance_peek() {
         // Arrange
-        let mut scanner = Scanner::new("abc");
+        let mut scanner = SourceScanner::new("abc");
 
         // Act
         scanner.advance();
@@ -175,7 +173,7 @@ mod tests {
 
     #[test]
     fn test_advance() {
-        let mut scanner = Scanner::new("ab\ncd");
+        let mut scanner = SourceScanner::new("ab\ncd");
         assert_eq!(scanner.advance(), 'a');
         assert_eq!(scanner.cursor, 1);
         assert_eq!(scanner.line, 1);

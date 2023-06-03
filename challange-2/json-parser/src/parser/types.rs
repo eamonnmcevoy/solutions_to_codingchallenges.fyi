@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum TokenType {
     LeftBrace,
     RightBrace,
@@ -12,6 +12,17 @@ pub enum TokenType {
     Number,
     Boolean,
     Null,
+}
+impl TokenType {
+    pub fn is_literal(&self) -> bool {
+        match self {
+            TokenType::String => true,
+            TokenType::Number => true,
+            TokenType::Boolean => true,
+            TokenType::Null => true,
+            _ => false,
+        }
+    }
 }
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -30,7 +41,7 @@ impl fmt::Display for TokenType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,

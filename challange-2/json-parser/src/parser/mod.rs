@@ -1,3 +1,5 @@
 pub mod lexer;
 pub mod types;
-mod scanner;
+mod source_scanner;
+mod token_scanner;
+pub mod syntax_analyser;
