@@ -1,13 +1,12 @@
 mod parser;
 
-use std::fs::{self};
+use std::{
+    fs::{self},
+    io::{self, Read},
+};
 
 use clap::{Arg, ArgAction, Command};
-use parser::{
-    lexer::Lexer,
-    syntax_analyser::SyntaxAnalyzer,
-    types::{Token},
-};
+use parser::{lexer::Lexer, syntax_analyser::SyntaxAnalyzer, types::Token};
 
 struct Arguments<'a> {
     filepath: Option<&'a String>,
@@ -31,13 +30,24 @@ fn main() {
     let matches = cli().get_matches();
     let args = parse_args(&matches);
 
-    let file_open_result = fs::read_to_string(args.filepath.unwrap());
-    if file_open_result.is_err() {
-        println!("Error opening file: {}", file_open_result.unwrap_err());
-        return;
-    }
+    let input = if let Some(filepath) = args.filepath {
+        let file_open_result = fs::read_to_string(filepath);
+        if file_open_result.is_err() {
+            println!("Error opening file: {}", file_open_result.unwrap_err());
+            return;
+        }
+        file_open_result.unwrap()
+    } else {
+        let mut input = String::new();
+        let mut stdin = io::stdin();
+        let result = stdin.read_to_string(&mut input);
+        if result.is_err() {
+            println!("Error reading from stdin: {}", result.unwrap_err());
+            return;
+        }
+        input
+    };
 
-    let input = file_open_result.unwrap();
     let lexer = Lexer::new();
 
     let get_tokens_result = lexer.get_tokens(input.as_str());

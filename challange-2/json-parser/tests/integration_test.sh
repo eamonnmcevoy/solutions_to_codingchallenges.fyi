@@ -1,33 +1,25 @@
 
 cargo build -r
 
-# iterate through all the files in test_files/full
-echo "Running fail tests..."
-for file in ./tests/files/fail*; do
-    # run the program on the file
-    echo $file
-    ./target/release/json-parser $file 
-    echo " "
-    # compare the output to the expected output
-    # diff tests/test_files/full/output.txt tests/test_files/full/expected_output.txt
-    # if [ $? -eq 0 ]; then
-    #     echo "Test passed"
-    # else
-    #     echo "Test failed"
-    # fi
-done
+pass_count=0
+fail_count=0
 
-echo "Running pass tests..."
-for file in ./tests/files/pass*; do
-    # run the program on the file
-    echo $file
-    ./target/release/json-parser $file
-    echo " "
-    # compare the output to the expected output
-    # diff tests/test_files/full/output.txt tests/test_files/full/expected_output.txt
-    # if [ $? -eq 0 ]; then
-    #     echo "Test passed"
-    # else
-    #     echo "Test failed"
-    # fi
+echo "┌──────────────┬────────┬────────────────────────────────────────────────────────────────────────────────────────────┐"
+echo "│ file         │ result │ output                                                                                     │"
+echo "├──────────────┼────────┼────────────────────────────────────────────────────────────────────────────────────────────┤"
+for file in $(ls ./tests/files | sort -sV) ; do
+    output=$(./target/release/json-parser ./tests/files/$file)
+    result=""
+    if [[ ($file =~ ^pass && $output == "ok") || ($file =~ ^fail && $output != "ok")]]; then
+        result="pass"
+        pass_count=$((pass_count+1))
+    else
+        result="fail"
+        fail_count=$((fail_count+1))
+    fi
+    awk -v f="$file" -v r="$result" -v o="$output" 'BEGIN{print "│ " sprintf("%-12s", f) " │ " r "   │ " sprintf("%-90s", o) " │"}'
 done
+echo "└──────────────┴────────┴────────────────────────────────────────────────────────────────────────────────────────────┘"
+
+echo "pass: $pass_count"
+echo "fail: $fail_count"
