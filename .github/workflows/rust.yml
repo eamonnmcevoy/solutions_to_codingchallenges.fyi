@@ -13,7 +13,7 @@ jobs:
   challenge-1:
     name: challenge 1
     env:
-      working-directory: ./challenge-1/ccwc
+      working-directory: challenge-1/ccwc
 
     runs-on: ubuntu-latest
 
@@ -29,7 +29,7 @@ jobs:
   challenge-2:
     name: challenge 2
     env:
-      working-directory: ./challenge-2/json-parser
+      working-directory: challenge-2/json-parser
 
     runs-on: ubuntu-latest
 
