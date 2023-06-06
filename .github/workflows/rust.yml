@@ -1,0 +1,27 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-challange-1:
+    name: challange 1
+    env:
+      working-directory: ./challange-1/ccwc
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose
+      working-directory: ${{env.working-directory}}
+    - name: Run tests
+      run: cargo test --verbose
+      working-directory: ${{env.working-directory}}
